@@ -1,0 +1,150 @@
+import numpy as np
+
+#plusieurs fonction dont j avais besoin vous pourrez passer directement au determinent(ligne 71)
+def pivot(A,j):
+    for i in range(j,A.shape[0]):
+        if A[i][j]!=0:
+            return (i,j)
+        else:
+            continue
+    return A.shape[0]
+
+def echange_ligne(A,i,j):
+    B = np.copy(A)
+    A[j]=A[i]
+    A[i]=B[j]  #A[i],A[j]=A[j],A[i]
+    return A
+    
+def transvection(A,i,j,alpha):
+    A[i]=A[i]-alpha*A[j]
+    return A
+    
+def recursion(A,B,X,i,j,w=0):
+    n=A.shape[0]
+    if i==n-1:
+        return 0
+    else:
+        w = w + (A[i][j+1])*(X[j+1][0])
+        if j!=n-2:
+            return recursion(A,B,X,i,j+1,w)
+        elif j==n-2:
+            return w                                     #X[i]=(B[i][1]-A[i][i+1]*X[i+1][1])    
+def remontee(A,B):
+    n=A.shape[0]
+    X=np.zeros((n,1))
+    B=np.reshape(B,(B.shape[0],1))
+    for _ in range(n):
+        if np.array_equal(A[_],np.zeros((1,n))[0]) and B[_]==0:
+            return "infinit solutions"
+        elif np.array_equal(A[_],np.zeros((1,n))[0]) and B[_]!=0:       #np.array_equal
+            return "no solution"
+        
+    for i in range(n-1,-1,-1):
+        if A[i][i]!=0:
+            X[i]=(B[i][0]-recursion(A,B,X,i,i,w=0))/A[i][i]
+        elif A[i][i]==0 and B[i][0]==recursion(A,B,X,i,j=i,w=0):
+            return "infinit solutions"
+        elif A[i][i]==0 and B[i][0]!=recursion(A,B,X,i,j=i,w=0):
+            return "no solution"
+    return X
+def pivot_gauss(A,B):
+    #B=np.reshape(B,(B.shape[0],1))
+    n=A.shape[0]
+    for j in range(n-1):
+        piv_index=pivot(A,j)
+        if piv_index==A.shape[0]:
+            continue
+        else: 
+            #print(f"{A}\n",B)
+            #print("pivot et ligne",piv_index[0],j)
+            echange_ligne(A,piv_index[0],j)
+            echange_ligne(B,piv_index[0],j)
+            for i in range(j+1,n):
+                if A[i][j]!=0:
+                    alpha=A[i][j]/A[piv_index[0]][piv_index[1]]
+                    transvection(A,i,j,alpha)
+                    transvection(B,i,j,alpha)
+
+    return A,B
+    
+    
+def det(A):
+    n=A.shape[0]
+    for j in range(n-1):
+        piv_index=pivot(A,j)
+        if piv_index==A.shape[0]:
+            continue
+        else:
+            echange_ligne(A,piv_index[0],j)
+            for i in range(j+1,n):
+                if A[i][j]!=0:
+                    alpha=A[i][j]/A[piv_index[0]][piv_index[1]]
+                    transvection(A,i,j,alpha)
+    det=A[0][0]
+    for i in range(1,A.shape[0]):
+        det=det*A[i][i]
+    return det
+def inverse(A):
+    n=A.shape[0]
+    I=np.zeros((n,n))
+    #sawb I
+    for i in range(n):
+        I[i][i]=1
+    #echelonner A    
+    A,I=pivot_gauss(A,I)
+    #print(A)
+    #print(I)
+    #diag de A = 1
+    for i in range(n): 
+        I[i]=I[i]/A[i][i]
+        A[i]=A[i]/A[i][i]
+        #print("A BL1",A) 
+        #print("I bl1",I)
+    for i in range(n-2,-1,-1):             #hit A[n-1][n-1]==1 aslan
+        for j in range(n-1,i,-1):
+            I = transvection(I,i,j,A[i][j])
+            A = transvection(A,i,j,A[i][j])
+            
+        #print("A",A)
+        #print("I",I)
+    return I
+def LU1(A):
+    n=A.shape[0]
+    U=np.zeros((n,n),dtype=float)
+    L=np.eye(n,dtype=float)
+    for j in range(n):
+        for i in range(j+1):
+            x=A[i][j]
+            for k in range(i):
+                x=x-L[i][k]*U[k][j]
+            U[i][j]=x
+        for i in range(j+1,n):
+            x=A[i][j]
+            for k in range(j):
+                x=x-L[i][k]*U[i][k]
+            L[i][j]=x/U[j][j]
+            
+    return L,U
+def LU2(A):
+    
+    n=A.shape[0]
+    
+    L=np.eye(n)
+    for j in range(n-1):
+        piv_index=pivot(A,j)
+        if piv_index==A.shape[0]:
+            continue
+        else:
+            T_inv=np.eye(n)
+            T=np.eye(n)
+            echange_ligne(A,piv_index[0],j)
+            for i in range(j+1,n):
+                if A[i][j]!=0:
+                    alpha=A[i][j]/A[piv_index[0]][piv_index[1]]
+                    T_inv[i][j] = alpha
+                    T[i][j]= -alpha
+            L=np.dot(L,T_inv)
+            A=np.dot(T,A)
+            U=A
+    return L,U
+
